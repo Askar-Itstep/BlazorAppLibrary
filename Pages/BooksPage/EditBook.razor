@@ -1,0 +1,158 @@
+﻿@page "/editbook/{bookid}"
+@using BlazorAppLibrary.Models
+@inject Repositories.BooksRepository repo
+@inject Repositories.AuthorsRepository repoAuthors
+@inject Repositories.GenresRepository repoGenres
+@inject Repositories.ImagesRepository repoImages
+@using Microsoft.AspNetCore.Http
+@using System.IO
+@inject IJSRuntime JS;
+@inject NavigationManager NavigationManager
+
+@if (Int32.Parse(BookId) == -1)
+{
+<h3>Create Book</h3>
+}
+else
+{
+<h3>EditBook</h3>
+}
+<EditForm Model="book" OnSubmit="EditCreate">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputFile OnChange="@OnInputFileChange" multiple title="New Image" />
+    <div class="form-group row">
+        <label for="authorid" class="col-sm-2 col-label">
+            AuthorID
+        </label>
+        <div class="col-sm-10">
+            <InputSelect id="authorId" @bind-Value=" book.AuthorsId" DisplayName="AuthorID">
+                @foreach (var item in  authors)
+                        {
+                <option value="@item.Id">@item.LastName</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="genreid" class="col-sm-2 col-label">
+            GenreID
+        </label>
+        <div class="col-sm-10">
+            <InputSelect id="genreId" @bind-Value=" book.GenresId" DisplayName="GenreID">
+                @foreach (var item in genres)
+                        {
+                <option value="@item.Id">@item.Name</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="imagesid" class="col-sm-2 col-label">
+            ImageID
+        </label>
+        <div class="col-sm-10">
+            <InputSelect id="imagesId" @bind-Value=" book.ImagesId" DisplayName="ImageID">
+                @foreach (var item in images)
+                        {
+                <option value="@item.Id">@item.FileName</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="pages" class="col-sm-2 col-label">
+            Pages
+        </label>
+        <div class="col-sm-10">
+            <InputNumber id="pages" @bind-Value=" book.Pages" DisplayName="Pages" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="price" class="col-sm-2 col-label">
+            Price
+        </label>
+        <div class="col-sm-10">
+            <InputNumber id="price" @bind-Value=" book.Price" DisplayName="Price" />
+        </div>
+    </div>
+    
+    <div class="form-group row">
+        <label for="title" class="col-sm-2 col-label">
+            Title
+        </label>
+        <div class="col-sm-10">
+            <InputText id="title" @bind-Value=" book.Title" DisplayName="Title" />
+        </div>
+    </div>
+    
+    <input type="submit" value="Submit" />
+</EditForm>
+
+@code {
+    [Parameter] public string BookId { get; set; }
+    private IEnumerable<Book> books = new List<Book>();
+    private List<Author> authors = new List<Author>();
+    private IEnumerable<Genre> genres = new List<Genre>();
+    private IEnumerable<Image> images = new List<Image>();
+    private Book book = new Book();
+    private Image image;
+    private bool flag = false;
+
+    protected override void OnInitialized()
+    {
+        if (BookId != null && Int32.Parse(BookId) != -1)
+        {
+            flag = true;
+            book = repo.Find(Int32.Parse(BookId));
+        }
+        else
+        {
+            flag = false;
+            book = new Book() { AuthorsId = 0, GenresId = 0, ImagesId = 0, Pages = 0, Price = 0, Title = "" };
+        }
+        authors = repoAuthors.GetAllWithInclude("Books").ToList();
+        books = repo.GetAllWithInclude("Genres", "Images");
+        genres = repoGenres.GetAll();
+        images = repoImages.GetAll();
+    }
+    protected async Task EditCreate()
+    {
+        if (flag == true)
+        {
+            if (image != null)
+            {
+                book.ImagesId = image.Id;
+            }
+            repo.Update(book);
+        }
+        else
+        {
+            if(image != null){
+                book.ImagesId = image.Id;
+            }
+            repo.Create(book);
+        }
+        NavigationManager.NavigateTo("/books");
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        image = new Image() { FileName = e.File.Name };
+        var maxAllowedFiles = 3;
+        var format = "image/png";
+
+        foreach (var imageFile in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            var resizedImageFile = await imageFile.RequestImageFileAsync(format, 100, 100);
+            var buffer = new byte[resizedImageFile.Size];
+            await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+            image.ImageData = buffer;
+            repoImages.Create(image);
+        }
+    }
+
+
+}

@@ -1,0 +1,90 @@
+﻿@page "/orders"
+@using BlazorAppLibrary.Repositories
+@using BlazorAppLibrary.Models
+
+@inject OrdersRepository repoOrder
+@inject BooksRepository repoBook
+@inject NavigationManager NavigationManager
+
+<h3>Orders</h3>
+
+@if (orders == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User Name</th>
+            <th>Books</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (orders.Count() != 0)
+            {
+        @foreach (var order in orders)
+                {
+        <tr>
+            @if (order != null && order.Books != null && order.Users != null)
+                        {
+            <td>@order.Users.UserName</td>
+            <td>@order.Books.Title</td>
+            }
+
+            <td>
+                <ul class="nav flex-row">
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href=@($"editorder/{@order.Id}") Match="NavLinkMatch.All">
+                            <span class="oi oi-wrench" aria-hidden="true"></span> Edit
+                        </NavLink>
+                    </li>
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href="/orders" @onclick="(()=>DeleteOrder(order.Id))" Match="NavLinkMatch.Prefix">
+                            <span class="oi oi-minus" aria-hidden="true"></span>Delete
+                        </NavLink>
+                    </li>
+                </ul>
+
+            </td>
+        </tr>
+        }
+    }
+    </tbody>
+</table>
+}
+<button class="btn btn-success lg" @onclick="AddOrder">Add Order</button>
+
+
+
+@code {
+    private IEnumerable<OrderBook> orders = new List<OrderBook>();
+    IEnumerable<Book> books = new List<Book>();
+
+    protected override void OnInitialized()
+    {
+        orders = repoOrder.GetAllWithInclude("Books", "Users"); // context.Orders;
+                                                                //books = repoBook.GetAllWithInclude("Images");
+    }
+
+    protected void AddOrder()
+    {
+        //NavigationManager.NavigateTo("/addorders");
+        NavigationManager.NavigateTo("/editorder/-1");
+    }
+    protected void DeleteOrder(int id)
+    {
+        try
+        {
+            repoOrder.Remove(orders.FirstOrDefault(a => a.Id == id));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error: ", e.Message);
+        }
+    }
+
+}
+

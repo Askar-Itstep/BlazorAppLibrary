@@ -1,0 +1,88 @@
+﻿@page "/books"
+@using BlazorAppLibrary.Repositories
+@using BlazorAppLibrary.Models
+@inject BooksRepository repoBook
+@inject ImagesRepository repoImage
+@inject NavigationManager NavigationManager
+
+<h3>Books</h3>
+@if (books == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>Price</th>
+            <th>Pages</th>
+            <th>Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in books)
+            {
+        <tr>
+            <td>@book.Title</td>
+            <td>@book.Authors.LastName</td>
+            <td>@book.Genres.Name</td>
+            <td>@book.Price</td>
+            <td>@book.Pages</td>
+            <td>
+                <img style='width:80px; height:60px;' src=@($"data:image/jpeg;base64,{Convert.ToBase64String(@book.Images.ImageData)} ") alt="NoImg" />
+            </td>
+            <td>
+                <ul class="nav flex-row">
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href=@($"editbook/{@book.Id}") Match="NavLinkMatch.All">
+                            <span class="oi oi-wrench" aria-hidden="true"></span> Edit 
+                        </NavLink>
+                    </li>
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href="/books" @onclick="(()=>DeleteBook(book.Id))"  Match="NavLinkMatch.Prefix">
+                            <span class="oi oi-plus" aria-hidden="true"></span> Delete
+                        </NavLink>
+                    </li>
+                </ul>
+            </td>
+        </tr>
+        }
+    </tbody>
+</table>
+}
+
+<button class="btn  btn-primary col-sm-3" @onclick="AddBook">Add new book</button>
+<button class="btn  btn-success col-sm-3" @onclick="SurveyBook">survey Book</button>
+
+
+@code {
+    IEnumerable<Book> books = new List<Book>();
+    IEnumerable<Image> images = new List<Image>();
+
+    protected override void OnInitialized(){
+        books = repoBook.GetAllWithInclude("Images", "Genres", "Authors");
+    }
+
+    protected void AddBook(){
+        NavigationManager.NavigateTo("editbook/-1");
+    }
+
+     protected void DeleteBook(int id)
+    {
+        try
+        {
+            repoBook.Remove(books.FirstOrDefault(b => b.Id == id));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error: ", e.Message);
+        }
+    }
+    protected void SurveyBook(){
+        NavigationManager.NavigateTo("/surveypage");
+    }
+}

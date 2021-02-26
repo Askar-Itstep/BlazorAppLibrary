@@ -1,0 +1,95 @@
+﻿@page "/editorder/{orderid}"
+@using BlazorAppLibrary.Models
+@inject  BlazorAppLibrary.Repositories.OrdersRepository repo
+@inject Repositories.UsersRepository usersRepo
+@inject Repositories.BooksRepository booksRepo
+@inject NavigationManager NavigationManager
+
+@if (Int32.Parse(OrderId) != -1)
+{
+<h3>Edit Order</h3>
+}
+else
+{
+<h3>Create Order</h3>
+}
+
+
+<EditForm Model="order" OnSubmit="EditCreate">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group-row">
+        <label for="userid" class="col-sm-2 label">
+            UserID
+        </label>
+        <div class="col-sm-10">
+            <InputSelect id="userid" @bind-Value="user.Id" DisplayName="UserID">
+                @foreach (var item in users)
+                        {
+                <option value="@item.Id">@item.UserName</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+    <div class="form-group-row">
+        <label for="bookid" class="col-sm-2 label">
+            BookID
+        </label>
+        <div class="col-sm-10">
+            <InputSelect id="bookid" @bind-Value="book.Id" DisplayName="BookID">
+                @foreach (var item in books)
+                        {
+                <option value="@item.Id">@item.Title</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <input type="submit" value="Submit" />
+</EditForm>
+
+@code {
+    [Parameter] public string OrderId { get; set; }
+    private OrderBook order;
+    private User user = new User();
+    private Book book = new Book();
+    private IEnumerable<User> users = new List<User>();
+    private IEnumerable<Book> books = new List<Book>();
+    private bool flag = false;
+
+    protected override void OnInitialized()
+    {
+        if (OrderId != null && Int32.Parse(OrderId) != -1)
+        {
+            flag = true;
+            order = new OrderBook();
+            order = repo.Find(Int32.Parse(OrderId));
+        }
+        else    //Create
+        {
+            flag = false;
+            order = new OrderBook();
+            users = usersRepo.GetAll();
+            books = booksRepo.GetAll();
+        }
+
+    }
+    protected async Task EditCreate()
+    {
+        if (flag == true)
+        {
+            order.BooksId = book.Id;
+            order.UsersId = user.Id;
+            repo.Update(order);
+        }
+        else
+        {
+            order.BooksId = book.Id;
+            order.UsersId = user.Id;
+            repo.Create(order);
+        }
+        NavigationManager.NavigateTo("/orders");
+    }
+
+}
+

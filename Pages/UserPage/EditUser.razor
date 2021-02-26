@@ -1,0 +1,59 @@
+﻿@page "/edituser/{userid}"
+@using BlazorAppLibrary.Models
+@inject  BlazorAppLibrary.Repositories.UsersRepository repo
+@inject IJSRuntime JS;
+@inject NavigationManager NavigationManager
+
+@if (Int32.Parse(UserId) != -1)
+{
+<h3>Edit User</h3>
+}
+else
+{
+<h3>Create User</h3>
+}
+
+
+<EditForm Model="user" OnSubmit="EditCreate">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText id="firstname" @bind-Value="user.UserName" DisplayName="User Name" />
+
+    <input type="submit" value="Submit" />
+</EditForm>
+
+@code {
+    [Parameter] public string UserId { get; set; }
+    private User user;
+    private bool flag = false;
+
+    protected override void OnInitialized()
+    {
+        if (UserId != null && Int32.Parse(UserId) != -1)
+        {
+            flag = true;
+            user = new User();
+            user = repo.Find(Int32.Parse(UserId));
+        }
+        else
+        {
+            flag = false;
+            user = new User() { UserName = "" };
+        }
+
+    }
+    protected async Task EditCreate()
+    {
+        if (flag == true)
+        {
+            repo.Update(user);
+        }
+        else
+        {
+            repo.Create(user);
+        }
+        NavigationManager.NavigateTo("/users");
+    }
+   
+}
+

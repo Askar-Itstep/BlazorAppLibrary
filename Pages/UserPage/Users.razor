@@ -1,0 +1,77 @@
+﻿@page "/users"
+@using BlazorAppLibrary.Repositories
+@using BlazorAppLibrary.Models
+
+@inject UsersRepository repoUser
+@inject NavigationManager NavigationManager
+
+<h3>Users</h3>
+
+@if (users == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in users)
+            {
+        <tr>
+            <td>@user.UserName</td>
+            
+            <td>
+                <ul class="nav flex-row">
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href=@($"edituser/{@user.Id}") Match="NavLinkMatch.All">
+                            <span class="oi oi-wrench" aria-hidden="true"></span> Edit
+                        </NavLink>
+                    </li>
+                    <li class="nav-item px-3">
+                        <NavLink class="nav-link" href="/users" @onclick="(()=>DeleteUser(user.Id))" Match="NavLinkMatch.Prefix">
+                            <span class="oi oi-minus" aria-hidden="true"></span>Delete
+                        </NavLink>
+                    </li>
+                </ul>
+            </td>
+        </tr>
+        }
+    </tbody>
+</table>
+}
+<button class="btn btn-success lg" @onclick="AddUser">Add User</button>
+
+
+
+@code {
+    private IEnumerable<User> users = new List<User>();
+
+    protected override void OnInitialized()
+    {
+        users = repoUser.GetAllWithInclude("OrderBooks");
+    }
+
+    protected void AddUser()
+    {
+        //NavigationManager.NavigateTo("/addusers");
+        NavigationManager.NavigateTo("/edituser/-1");
+    }
+    protected void DeleteUser(int id)
+    {
+        try
+        {
+            repoUser.Remove(users.FirstOrDefault(a => a.Id == id));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error: ", e.Message);
+        }
+    }
+
+}
+

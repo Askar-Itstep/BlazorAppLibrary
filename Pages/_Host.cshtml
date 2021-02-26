@@ -1,0 +1,80 @@
+﻿@page "/"
+@namespace BlazorAppLibrary.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlazorAppLibrary</title>
+    <base href="~/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="BlazorAppLibrary.styles.css" rel="stylesheet" />
+    <script>
+        window.workSurveyPage={
+        //-------------1)clear form <Surveypage.razor>----------------
+        clearSurveyForm: function(){
+        var surveyForm = document.forms.surveyBook;
+        surveyForm.reset();
+        //-----------не нужно (radiobutton не мешает)-----------------
+        // for(let item of surveyForm.elements){
+        //    if(item.type=='radio' || item.type=='checkbox'){
+        //       console.log(item.value)
+        //   }
+        // }
+        //--но т.к.работает ~NotifyObservable?  нужно реализ.  обработ. изм. данн. без нажатия <Submit>()------------
+        },
+        createChart: function(zipStatistic){
+
+            var labels= Array.from(zipStatistic).map((val)=>{
+                return val['title']
+            });
+
+            var data = Array.from(zipStatistic).map((val)=>{
+                return val['val']
+            });
+
+            var ctx = document.getElementById('myChart').getContext("2d");
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels, 
+                    datasets: [{
+                        label: "weight",
+                        backgroundColor: ['red', 'yellow', 'green', 'blue'],
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: data  
+                    }]
+                },
+                options: {}
+            });
+
+            }
+        }
+    </script>
+</head>
+<body>
+    <component type="typeof(App)" render-mode="ServerPrerendered" />
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,177 @@
+﻿@page "/surveypage"
+@page "/surveypage/{number:int}"
+@using BlazorAppLibrary.Models
+@using BlazorAppLibrary.Repositories
+@inject AuthorsRepository authorsRepo
+@inject GenresRepository genresRepo
+@inject BooksRepository bookRepo
+@inject IJSRuntime JS;
+@inject StatisticRepository statisticRepo
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStorage 
+@using System
+@implements IAsyncDisposable
+
+<h3>Surveypage</h3>
+<EditForm id="surveyBook" Model="book" OnSubmit="FindBook">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group row">
+        <label for="authorid" class="control-label col-md-2">
+            Author
+        </label>
+        <div class="col-md-10">
+            <InputSelect id="authorId" @bind-Value=" book.AuthorsId" DisplayName="AuthorID">
+                @foreach (var item in authors)
+                        {
+                <option value="@item.Id">@item.LastName</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <InputRadioGroup @bind-Value="book.GenresId">
+            <label for="authorid" class="control-label col-md-2">
+                Genre
+            </label>
+            <div class="col-md-10">
+                @foreach (var genre in genres)
+                        {
+                <InputRadio Value="genre.Id" id="genre.Id"/>
+                @genre.Name<br>
+                }
+            </div>
+        </InputRadioGroup>
+    </div>
+
+
+    <div class="form-group row">
+        <label for="isimage" class="control-label col-md-2">With Images</label>
+        <div class="col-md-10">
+            <InputCheckbox id="isimage" @bind-Value="IsImage" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="title" class="control-label col-md-2">Input books title</label>
+        <div class="col-md-10">
+            <InputText id="title" @bind-Value="book.Title" />
+        </div>
+    </div>
+    <input type="submit" value="Send" class="btn btn-primary" />
+</EditForm>
+<br />
+
+@if (IsVisible)
+{                                                           // invisible
+<table id="surveyBook" class="table table-striped">
+    <thead class="thead-light">
+        <tr>
+            <th>Наименование</th>
+            <th>Автор</th>
+            <th>Жанр</th>
+            <th>Изображение</th>
+            <th>Цена</th>
+            <th>Кол-во стр.</th>
+        </tr>
+    </thead>
+    <tbody id="tbody">
+        @foreach(var book in books){
+            <tr>
+                <td>@book.Title</td>
+                <td>@book.Authors.LastName</td>
+                <td>@book.Genres.Name</td>
+                <td><img style="width:100px;" src=@($"data:image/jpeg;base64,{Convert.ToBase64String(@book.Images.ImageData)} ") alt="NoImg"/>
+                </td>
+                <td>@book.Price</td>
+                <td>@book.Pages</td>
+            </tr>
+        }
+    </tbody>
+</table>
+}
+
+@code {
+    //forms valumes
+    private Book book = new Book();
+    private IEnumerable<Book> books = new List<Book>();
+    private Author author = new Author() { Id = 0, FirstName = "", LastName = "--author--" };
+    private List<Author> authors = new List<Author>();
+    private Genre genre = new Genre() { Id = 0, Name = "---genre-----" };
+    private IEnumerable<Genre> genres = new List<Genre>();
+    private bool IsImage { get; set; } = false;
+
+    //key visible tableResults
+    private bool IsVisible { get; set; } = false;
+
+    //Statistic->SessionStorage
+    Statistic statistic = new Statistic();
+    [Parameter]
+    public String Number { get; set; }
+
+    //---------M.E.T.O.D.S.-------------------------
+    protected override async Task OnInitializedAsync()
+    {
+        books = bookRepo.GetAllWithInclude("Images", "Genres", "Authors");
+
+        authors = authorsRepo.GetAllWithInclude("Books").ToList();
+        authors.Add(author);
+        authors = authors.OrderBy(a => a.Id).ToList();
+
+        genres = genresRepo.GetAll();
+        genres.ToList().Add(genre);
+        genres= genres.OrderBy(g => g.Id).ToList();
+
+        
+    }
+    
+    protected async Task FindBook()
+    {    
+        //1b)выборка книг по введенн. парам. + сохр. изм. объекта статист.
+        {           
+            //Type bookType = typeof(Book);   //Type.GetType("BlazorAppLibrary.Models.Book", false, true);
+            ////выборка св-в  ID
+            //var listPropBook = bookType.GetProperties().Where(p => p.GetValue(book) != null  &&p.PropertyType == typeof(int?) );
+            //foreach(var prop in listPropBook){
+            //var temp = books.Where(b=>b.prop...);
+            //}           
+        }
+        if (book.AuthorsId != null && book.AuthorsId != 0)
+        {
+            books = books.Where(b => b.AuthorsId == book.AuthorsId);
+            statistic.CountAuthorChoice++;
+        }
+        if (book.GenresId != null && book.GenresId != 0)
+        {
+            books = books.Where(b => b.GenresId == book.GenresId);
+            statistic.CountGenreChoice++;
+        }
+        if (IsImage != null && IsImage != false)
+        {
+            books = books.Where(b => b.Images != null);
+            statistic.CountIsImageChoice++;
+        }
+        if (!string.IsNullOrWhiteSpace(book.Title))
+        {
+            books = books.Where(b => b.Title == book.Title);
+            statistic.CountTitleChoice++;
+        }
+        //2)отобраз. табл. искомых книг
+        IsVisible = true;
+
+        //3)сохр.  пока в сессию->в БД по истеч. сессии (закр. страницы)
+        //не нужно данн. хран. в переменн. statistic (static?)
+       // await ProtectedSessionStorage.SetAsync("statistic", statistic);        
+
+        //4)js - очистить форму       
+        await JS.InvokeVoidAsync("workSurveyPage.clearSurveyForm"); 
+    }
+
+    //накопление данных ->запись в БД
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+      //var sessionStatistic = await ProtectedSessionStorage.GetAsync<Statistic>("statistic");
+        statisticRepo.Create(statistic);
+    }
+   
+} 

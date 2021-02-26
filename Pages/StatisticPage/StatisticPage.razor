@@ -1,0 +1,78 @@
+﻿@page "/statistic"
+@using BlazorAppLibrary.Models
+@using BlazorAppLibrary.Repositories
+@inject StatisticRepository statisticRepo
+@inject IJSRuntime JS;
+
+
+@*<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Автор</th>
+            <th>Название</th>
+            <th>Жанр</th>
+            <th>Наличие картинок</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in statistics)
+        {
+        <tr>
+            <td>@item.CountAuthorChoice</td>
+            <td>@item.CountTitleChoice</td>
+            <td>@item.CountGenreChoice</td>
+            <td>@item.CountIsImageChoice</td>
+        </tr>
+        }
+    </tbody>
+</table>*@
+<h3>Статистика запросов</h3>
+<table>
+    <tr>
+        <td><b>Максимально популярен поиск по:</b></td>
+        <td>@statisticViewModel.MaxPop</td>
+    </tr>
+    <tr>
+        <td><b>Самый не популярный поиск по:</b></td>
+        <td>@statisticViewModel.MinPop</td>
+    </tr>
+    <tr><td><b>Общее количество запросов по авторам:</b></td><td>@StatisticViewModel.FullCountAuthorChoice</td></tr>
+    <tr><td><b>Общее количество запросов по названию:</b></td><td>@StatisticViewModel.FullCountTitleChoice</td></tr>
+    <tr><td><b>Общее количество запросов по жанру:</b></td><td>@StatisticViewModel.FullCountGenreChoice</td></tr>
+    <tr><td><b>Общее количество запросов по наличию изображеия:</b></td><td>@StatisticViewModel.FullCountImageChoice</td></tr>
+</table>
+<br />
+<canvas id="myChart" style="width:300px;heigh:300px"></canvas>
+
+
+
+
+
+@code {
+    private IEnumerable<Statistic> statistics = new List<Statistic>();
+    private StatisticViewModel statisticViewModel = new StatisticViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        statistics = statisticRepo.GetAll();
+        StatisticViewModel.FullCountAuthorChoice = statistics.Sum(s => s.CountAuthorChoice);
+        StatisticViewModel.FullCountGenreChoice = statistics.Sum(s => s.CountGenreChoice);
+        StatisticViewModel.FullCountImageChoice = statistics.Sum(s => s.CountIsImageChoice);
+        StatisticViewModel.FullCountTitleChoice = statistics.Sum(s => s.CountTitleChoice);
+
+        statisticViewModel.GetMaxMin(); //->MaxPop, MinPop
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender){
+        //await JS.InvokeVoidAsync("workSurveyPage.createChart");
+        string[] strEnumCategory = Enum.GetNames(typeof(StatisticViewModel.Choice));
+        var myZip = strEnumCategory.Zip(statisticViewModel.viewStatistics,
+        (str, stat) => new
+        {
+            Title = str,
+            Val = stat
+        });
+        await JS.InvokeVoidAsync("workSurveyPage.createChart", myZip);
+
+    }
+}

@@ -1,0 +1,55 @@
+﻿@page "/editauthor/{authorid}"
+@using BlazorAppLibrary.Models
+@inject  BlazorAppLibrary.Repositories.AuthorsRepository repo
+@inject IJSRuntime JS;
+@inject NavigationManager NavigationManager
+
+@if(Int32.Parse(AuthorId) == -1){
+    <h3>Create Author</h3>
+}else{
+    <h3>Edit Author</h3>
+}
+
+<EditForm Model="author" OnSubmit="EditCreate">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <InputText id="firstname" @bind-Value="author.FirstName" DisplayName="First Name" />
+    <InputText id="lastname" @bind-Value="author.LastName" DisplayName="Last Name" />
+    <input type="submit" value="Submit" />
+</EditForm>
+
+@code {
+    [Parameter] public string AuthorId { get; set; }
+    private Author author;
+    private bool flag = false;
+
+    protected override void OnInitialized()
+    {
+        if (AuthorId != null && Int32.Parse(AuthorId) != -1)
+        {
+            flag = true;
+            author = new Author();
+            author = repo.Find(Int32.Parse(AuthorId));
+        }
+        else
+        {
+            flag = false;
+            author = new Author() { FirstName = "", LastName = "" };
+        }
+
+    }
+    protected async Task EditCreate()
+    {
+        if (flag == true)
+        {
+            repo.Update(author);
+        }
+        else
+        {
+            repo.Create(author);
+        }
+        NavigationManager.NavigateTo("/authors");
+    }
+   
+}
+
