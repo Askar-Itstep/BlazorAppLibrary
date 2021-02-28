@@ -1,5 +1,5 @@
 ﻿@page "/surveypage"
-@page "/surveypage/{number:int}"
+
 @using BlazorAppLibrary.Models
 @using BlazorAppLibrary.Repositories
 @inject AuthorsRepository authorsRepo
@@ -8,9 +8,10 @@
 @inject IJSRuntime JS;
 @inject StatisticRepository statisticRepo
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@inject ProtectedSessionStorage ProtectedSessionStorage 
+@inject ProtectedSessionStorage ProtectedSessionStorage
 @using System
 @implements IAsyncDisposable
+
 
 <h3>Surveypage</h3>
 <EditForm id="surveyBook" Model="book" OnSubmit="FindBook">
@@ -38,7 +39,7 @@
             <div class="col-md-10">
                 @foreach (var genre in genres)
                         {
-                <InputRadio Value="genre.Id" id="genre.Id"/>
+                <InputRadio Value="genre.Id" id="genre.Id" />
                 @genre.Name<br>
                 }
             </div>
@@ -76,16 +77,18 @@
         </tr>
     </thead>
     <tbody id="tbody">
-        @foreach(var book in books){
-            <tr>
-                <td>@book.Title</td>
-                <td>@book.Authors.LastName</td>
-                <td>@book.Genres.Name</td>
-                <td><img style="width:100px;" src=@($"data:image/jpeg;base64,{Convert.ToBase64String(@book.Images.ImageData)} ") alt="NoImg"/>
-                </td>
-                <td>@book.Price</td>
-                <td>@book.Pages</td>
-            </tr>
+        @foreach (var book in books)
+            {
+        <tr>
+            <td>@book.Title</td>
+            <td>@book.Authors.LastName</td>
+            <td>@book.Genres.Name</td>
+            <td>
+                <img style="width:100px;" src=@($"data:image/jpeg;base64,{Convert.ToBase64String(@book.Images.ImageData)} ") alt="NoImg" />
+            </td>
+            <td>@book.Price</td>
+            <td>@book.Pages</td>
+        </tr>
         }
     </tbody>
 </table>
@@ -100,16 +103,12 @@
     private Genre genre = new Genre() { Id = 0, Name = "---genre-----" };
     private IEnumerable<Genre> genres = new List<Genre>();
     private bool IsImage { get; set; } = false;
-
-    //key visible tableResults
     private bool IsVisible { get; set; } = false;
+    private bool IsShould { get; set; } = false;
 
     //Statistic->SessionStorage
     Statistic statistic = new Statistic();
-    [Parameter]
-    public String Number { get; set; }
 
-    //---------M.E.T.O.D.S.-------------------------
     protected override async Task OnInitializedAsync()
     {
         books = bookRepo.GetAllWithInclude("Images", "Genres", "Authors");
@@ -120,22 +119,29 @@
 
         genres = genresRepo.GetAll();
         genres.ToList().Add(genre);
-        genres= genres.OrderBy(g => g.Id).ToList();
-
-        
+        genres = genres.OrderBy(g => g.Id).ToList();
     }
-    
-    protected async Task FindBook()
-    {    
-        //1b)выборка книг по введенн. парам. + сохр. изм. объекта статист.
-        {           
-            //Type bookType = typeof(Book);   //Type.GetType("BlazorAppLibrary.Models.Book", false, true);
-            ////выборка св-в  ID
-            //var listPropBook = bookType.GetProperties().Where(p => p.GetValue(book) != null  &&p.PropertyType == typeof(int?) );
-            //foreach(var prop in listPropBook){
-            //var temp = books.Where(b=>b.prop...);
-            //}           
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        book = new Book();
+        IsShould = false; //запрет. обновл. без <OnSubmit>
+    }
+    protected override bool ShouldRender()
+    {
+        var renderUI = false;
+        if (IsShould)
+        {
+            renderUI = true;// false;
         }
+        return renderUI;
+    }
+
+    protected async Task FindBook()
+    {
+        IsShould = true;  //<OnSubmit>!
+                          //1b)выборка книг по введенн. парам. + сохр. изм. объекта статист.
+      
+        books = bookRepo.GetAllWithInclude("Images", "Genres", "Authors");
         if (book.AuthorsId != null && book.AuthorsId != 0)
         {
             books = books.Where(b => b.AuthorsId == book.AuthorsId);
@@ -160,18 +166,21 @@
         IsVisible = true;
 
         //3)сохр.  пока в сессию->в БД по истеч. сессии (закр. страницы)
-        //не нужно данн. хран. в переменн. statistic (static?)
-       // await ProtectedSessionStorage.SetAsync("statistic", statistic);        
+        await ProtectedSessionStorage.SetAsync("statistic", statistic);
 
-        //4)js - очистить форму       
-        await JS.InvokeVoidAsync("workSurveyPage.clearSurveyForm"); 
+        //4)js - очистить форму
+        await JS.InvokeVoidAsync("workSurveyPage.clearSurveyForm");
+        //await InvokeAsync(StateHasChanged);
     }
 
-    //накопление данных ->запись в БД
+
+    //запись в БД по выкл. компонента
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-      //var sessionStatistic = await ProtectedSessionStorage.GetAsync<Statistic>("statistic");
-        statisticRepo.Create(statistic);
+        var sessionStatistic = await ProtectedSessionStorage.GetAsync<Statistic>("statistic");
+        Statistic value = sessionStatistic.Value;     //string myType =  sessionStatistic.GetType().ToString();
+
+         statisticRepo.Create(statistic);
     }
-   
-} 
+
+}

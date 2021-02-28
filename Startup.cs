@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace BlazorAppLibrary
 {
@@ -28,7 +29,7 @@ namespace BlazorAppLibrary
         public void ConfigureServices(IServiceCollection services)
         {
             string connection = Configuration.GetConnectionString("myDB");
-            services.AddDbContext<myDBContext>(option=>option.UseSqlServer(connection));
+            services.AddDbContext<myDBContext>(option => option.UseSqlServer(connection));
 
             //services.AddTransient(typeof(IRepository<>), typeof(Repository<>)); //??????????
             services.AddScoped<AuthorsRepository>();
@@ -59,13 +60,15 @@ namespace BlazorAppLibrary
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

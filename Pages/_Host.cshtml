@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link href="css/site.css" rel="stylesheet" />
     <link href="BlazorAppLibrary.styles.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
     <script>
         window.workSurveyPage={
         //-------------1)clear form <Surveypage.razor>----------------
@@ -27,18 +30,16 @@
         //       console.log(item.value)
         //   }
         // }
-        //--но т.к.работает ~NotifyObservable?  нужно реализ.  обработ. изм. данн. без нажатия <Submit>()------------
         },
+        //-------------CHART.JS ------------------------------
         createChart: function(zipStatistic){
 
             var labels= Array.from(zipStatistic).map((val)=>{
                 return val['title']
             });
-
             var data = Array.from(zipStatistic).map((val)=>{
                 return val['val']
             });
-
             var ctx = document.getElementById('myChart').getContext("2d");
 
             var myChart = new Chart(ctx, {
@@ -54,9 +55,11 @@
                 },
                 options: {}
             });
+           },
 
-            }
         }
+
+       
     </script>
 </head>
 <body>

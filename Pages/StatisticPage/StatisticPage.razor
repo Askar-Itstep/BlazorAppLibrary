@@ -1,9 +1,9 @@
 ﻿@page "/statistic"
+
 @using BlazorAppLibrary.Models
 @using BlazorAppLibrary.Repositories
 @inject StatisticRepository statisticRepo
 @inject IJSRuntime JS;
-
 
 @*<table class="table table-striped">
     <thead>
@@ -43,7 +43,7 @@
 </table>
 <br />
 <canvas id="myChart" style="width:300px;heigh:300px"></canvas>
-
+<div id="example"></div>
 
 
 
@@ -51,7 +51,8 @@
 @code {
     private IEnumerable<Statistic> statistics = new List<Statistic>();
     private StatisticViewModel statisticViewModel = new StatisticViewModel();
-
+    //[Parameter]
+   // public int onbeforeunload { get; set; }
     protected override async Task OnInitializedAsync()
     {
         statistics = statisticRepo.GetAll();
@@ -61,10 +62,11 @@
         StatisticViewModel.FullCountTitleChoice = statistics.Sum(s => s.CountTitleChoice);
 
         statisticViewModel.GetMaxMin(); //->MaxPop, MinPop
-
     }
+
+    //draw image-Chart.js 
     protected override async Task OnAfterRenderAsync(bool firstRender){
-        //await JS.InvokeVoidAsync("workSurveyPage.createChart");
+        
         string[] strEnumCategory = Enum.GetNames(typeof(StatisticViewModel.Choice));
         var myZip = strEnumCategory.Zip(statisticViewModel.viewStatistics,
         (str, stat) => new
@@ -73,6 +75,10 @@
             Val = stat
         });
         await JS.InvokeVoidAsync("workSurveyPage.createChart", myZip);
-
     }
+  
+   
+   
+ 
+   
 }
